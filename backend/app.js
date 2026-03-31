@@ -1,26 +1,12 @@
+
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import pool from './db.js';
 
 const app = express();
-const allowedOrigins = (process.env.CORS_ORIGIN || '')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
 
-app.use(
-  cors({
-    origin(origin, callback) {
-      if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
-        callback(null, true);
-        return;
-      }
-
-      callback(new Error('CORS not allowed'));
-    },
-  })
-);
+app.use(cors());
 app.use(express.json());
 
 app.get('/api/health', async (req, res) => {
@@ -52,7 +38,7 @@ app.post('/api/users/register', async (req, res) => {
 
     res.json({ message: 'User registered successfully', userId: id });
   } catch (error) {
-    console.error('Error registering user:', error);
+    console.error('Error registering user: - app.js:41', error);
     res.status(500).json({ error: 'Failed to register user' });
   }
 });
@@ -105,7 +91,7 @@ app.post('/api/users/login', async (req, res) => {
 
     res.status(401).json({ error: 'Invalid ID or Password' });
   } catch (error) {
-    console.error('Error logging in:', error);
+    console.error('Error logging in: - app.js:94', error);
     res.status(500).json({ error: 'Failed to login' });
   }
 });
@@ -115,7 +101,7 @@ app.get('/api/users', async (req, res) => {
     const [users] = await pool.execute('SELECT * FROM users');
     res.json(users);
   } catch (error) {
-    console.error('Error fetching users:', error);
+    console.error('Error fetching users: - app.js:104', error);
     res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
@@ -130,7 +116,7 @@ app.get('/api/users/:id', async (req, res) => {
 
     res.json(users[0]);
   } catch (error) {
-    console.error('Error fetching user:', error);
+    console.error('Error fetching user: - app.js:119', error);
     res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
@@ -143,7 +129,7 @@ app.put('/api/users/:id/password', async (req, res) => {
 
     res.json({ message: 'Password updated successfully' });
   } catch (error) {
-    console.error('Error updating password:', error);
+    console.error('Error updating password: - app.js:132', error);
     res.status(500).json({ error: 'Failed to update password' });
   }
 });
@@ -159,7 +145,7 @@ app.put('/api/users/:id', async (req, res) => {
 
     res.json({ message: 'Profile updated successfully' });
   } catch (error) {
-    console.error('Error updating profile:', error);
+    console.error('Error updating profile: - app.js:148', error);
     res.status(500).json({ error: 'Failed to update profile' });
   }
 });
@@ -176,7 +162,7 @@ app.post('/api/print-jobs', async (req, res) => {
 
     res.json({ message: 'Print job submitted successfully', jobId: result.insertId });
   } catch (error) {
-    console.error('Error creating print job:', error);
+    console.error('Error creating print job: - app.js:165', error);
     res.status(500).json({ error: 'Failed to create print job' });
   }
 });
@@ -186,7 +172,7 @@ app.get('/api/print-jobs', async (req, res) => {
     const [jobs] = await pool.execute('SELECT * FROM print_jobs ORDER BY date DESC, created_at DESC');
     res.json(jobs);
   } catch (error) {
-    console.error('Error fetching print jobs:', error);
+    console.error('Error fetching print jobs: - app.js:175', error);
     res.status(500).json({ error: 'Failed to fetch print jobs' });
   }
 });
@@ -199,7 +185,7 @@ app.get('/api/print-jobs/user/:userId', async (req, res) => {
     );
     res.json(jobs);
   } catch (error) {
-    console.error('Error fetching print jobs:', error);
+    console.error('Error fetching print jobs: - app.js:188', error);
     res.status(500).json({ error: 'Failed to fetch print jobs' });
   }
 });
@@ -212,7 +198,7 @@ app.put('/api/print-jobs/:id/status', async (req, res) => {
 
     res.json({ message: 'Print job status updated successfully' });
   } catch (error) {
-    console.error('Error updating print job status:', error);
+    console.error('Error updating print job status: - app.js:201', error);
     res.status(500).json({ error: 'Failed to update print job status' });
   }
 });
@@ -229,7 +215,7 @@ app.post('/api/paper-requests', async (req, res) => {
 
     res.json({ message: 'Paper request submitted successfully', requestId: result.insertId });
   } catch (error) {
-    console.error('Error creating paper request:', error);
+    console.error('Error creating paper request: - app.js:218', error);
     res.status(500).json({ error: 'Failed to create paper request' });
   }
 });
@@ -241,7 +227,7 @@ app.get('/api/paper-requests', async (req, res) => {
     );
     res.json(requests);
   } catch (error) {
-    console.error('Error fetching paper requests:', error);
+    console.error('Error fetching paper requests: - app.js:230', error);
     res.status(500).json({ error: 'Failed to fetch paper requests' });
   }
 });
@@ -254,7 +240,7 @@ app.get('/api/paper-requests/user/:userId', async (req, res) => {
     );
     res.json(requests);
   } catch (error) {
-    console.error('Error fetching paper requests:', error);
+    console.error('Error fetching paper requests: - app.js:243', error);
     res.status(500).json({ error: 'Failed to fetch paper requests' });
   }
 });
@@ -267,7 +253,7 @@ app.put('/api/paper-requests/:id/status', async (req, res) => {
 
     res.json({ message: 'Paper request status updated successfully' });
   } catch (error) {
-    console.error('Error updating paper request status:', error);
+    console.error('Error updating paper request status: - app.js:256', error);
     res.status(500).json({ error: 'Failed to update paper request status' });
   }
 });

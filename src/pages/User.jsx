@@ -1,10 +1,45 @@
 export default function User() {
-  const submitJob = () => {
-    const jobs = JSON.parse(localStorage.getItem("jobs")) || [];
-    jobs.push({ status: "Pending" });
-    localStorage.setItem("jobs", JSON.stringify(jobs));
-    alert("Print job submitted!");
-  };
+  const submitJob = async () => {
+  const color = document.querySelectorAll("select")[0].value;
+  const binding = document.querySelectorAll("select")[1].value;
+  const copies = document.querySelector("input[type='number']").value;
+  const file = document.querySelector("input[type='file']").files[0];
+
+  if (!file) {
+    alert("Please upload a file");
+    return;
+  }
+
+  try {
+    const res = await fetch("https://photocopy-backend-isnx.onrender.com/api/print-jobs", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userName: "Dharshini",        // temporary
+        userId: "123",                // temporary
+        printType: binding,
+        orientation: "Portrait",
+        color: color,
+        copies: Number(copies),
+        pages: 1,
+        fileName: file.name
+      }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert("Print job submitted successfully!");
+    } else {
+      alert(data.error || "Failed to submit job");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Server error");
+  }
+};
 
   return (
     <div className="page">
