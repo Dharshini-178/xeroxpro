@@ -701,9 +701,15 @@ function StaffDashboard({ setPage, currentUser }) {
             🚪 Logout
           </button>
           
-            <button className="sidebar-print" onClick={() => window.print()}>
-            🖨️ Print
-          </button>
+            <button className="sidebar-print" onClick={() => {
+              if (file) {
+                printDocument(file, orientation, color);
+              } else {
+                window.print();
+              }
+            }}>
+              🖨️ Print
+            </button>
         </div>
           <div className="staff-content">
             <div className="content-header">
@@ -1099,20 +1105,22 @@ function StaffDashboard({ setPage, currentUser }) {
                       : filePageCount * copies;
 
                     try {
+                      // Use FormData to upload the actual file
+                      const formData = new FormData();
+                      formData.append('file', file);
+                      formData.append('userName', editName);
+                      formData.append('userId', userId);
+                      formData.append('printType', printType);
+                      formData.append('orientation', orientation);
+                      formData.append('color', color);
+                      formData.append('copies', copies);
+                      formData.append('pages', filePageCount);
+                      formData.append('fileName', file.name);
+
                       const response = await fetch(`${API_URL}/print-jobs`, {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          userName: editName,
-                          userId: userId,
-                          printType: printType,
-                          orientation: orientation,
-                          color: color,
-                          copies: copies,
-                          pages: filePageCount,
-                          totalPapers: totalPapers,
-                          fileName: file.name
-                        }),
+                        body: formData,
+                        // Note: Don't set Content-Type header — browser sets it with boundary for FormData
                       });
 
                       if (!response.ok) {
@@ -1143,8 +1151,6 @@ function StaffDashboard({ setPage, currentUser }) {
                       });
                       localStorage.setItem("printJobs", JSON.stringify(printJobs));
                     }
-                    // ✅ Auto-print the uploaded document
-                    printDocument(file, orientation, color);
                     setSubmitted(true);
                   }}
                 >
@@ -1550,10 +1556,13 @@ function AdminDashboard({ setPage }) {
                     <thead>
                       <tr>
                         <th>User Name</th>
+                        <th>File</th>
                         <th>Print Type</th>
                         <th>Copies</th>
                         <th>Pages</th>
+                        <th>Status</th>
                         <th>Date</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1561,11 +1570,62 @@ function AdminDashboard({ setPage }) {
                         .sort((a, b) => getHistorySortValue(b) - getHistorySortValue(a))
                         .map((job, index) => (
                         <tr key={index}>
-                          <td>{job.userName || "Staff User"}</td>
-                          <td>{job.printType === "single-side" ? "Single Side" : job.printType === "front-and-back" ? "Front and Back" : job.printType}</td>
+                          <td>{job.user_name || job.userName || "Staff User"}</td>
+                          <td>{job.file_name || job.fileName || "-"}</td>
+                          <td>{(job.print_type || job.printType) === "single-side" ? "Single Side" : (job.print_type || job.printType) === "front-and-back" ? "Front and Back" : (job.print_type || job.printType)}</td>
                           <td>{job.copies || 1}</td>
                           <td>{job.pages || 1}</td>
-                          <td>{job.date || new Date().toLocaleDateString()}</td>
+                          <td>
+                            <span className={`status-badge ${(job.status || "pending").toLowerCase()}`}>
+                              {job.status || "Pending"}
+                            </span>
+                          </td>
+                          <td>{formatDateAsDDMMYYYY(job.date)}</td>
+                          <td>
+                            <div className="action-buttons">
+                              {(job._id || job.id) && job.file_size && (
+                                <a
+                                  href={`${API_URL}/print-jobs/${job._id || job.id}/file`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="download-btn-small"
+                                  title="Download File"
+                                >
+                                  📥
+                                </a>
+                              )}
+                              {(job._id || job.id) && job.file_size && job.status !== "Completed" && (
+                                <button
+                                  className="print-btn-small"
+                                  title="Send to Printer"
+                                  onClick={async () => {
+                                    if (!confirm(`Send "${job.file_name || job.fileName}" to the printer?`)) return;
+                                    try {
+                                      const res = await fetch(`${API_URL}/print-jobs/${job._id || job.id}/print`, {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({}),
+                                      });
+                                      const data = await res.json();
+                                      if (res.ok) {
+                                        alert("✅ " + data.message);
+                                        loadAdminData();
+                                      } else {
+                                        alert("❌ " + (data.error || "Print failed"));
+                                      }
+                                    } catch (err) {
+                                      alert("❌ Failed to connect to printer server");
+                                    }
+                                  }}
+                                >
+                                  🖨️
+                                </button>
+                              )}
+                              {job.status === "Completed" && (
+                                <span className="completed-text">✅</span>
+                              )}
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -1706,40 +1766,7 @@ function AdminDashboard({ setPage }) {
           )}
 
           {selectedOption === "printControl" && (
-            <>
-              <div className="content-header">
-                <h2>⚙️ Print Control</h2>
-                <p>Manage printing operations</p>
-              </div>
-              <div className="print-control-section">
-                <div className="control-card">
-                  <h3>Print Operations</h3>
-                  <div className="operation-controls">
-                    <div className="printer-state-buttons">
-                      <button 
-                        className={`printer-btn ${!printerPaused ? 'active' : ''}`}
-                        onClick={() => {
-                          setPrinterPaused(false);
-                          window.printerBlocked = false;
-                        }}
-                      >
-                        ✅ Unblock
-                      </button>
-                      <button 
-                        className={`printer-btn ${printerPaused ? 'active' : ''}`}
-                        onClick={() => {
-                          setPrinterPaused(true);
-                          window.printerBlocked = true;
-                        }}
-                      >
-                        ❌ Block
-                      </button>
-                    </div>
-
-                  </div>
-                </div>
-              </div>
-            </>
+            <PrintControlPanel printerPaused={printerPaused} setPrinterPaused={setPrinterPaused} />
           )}
         </div>
       </div>
@@ -1747,3 +1774,129 @@ function AdminDashboard({ setPage }) {
   );
 }
 
+/* ---------- PRINT CONTROL PANEL (with live printer status) ---------- */
+
+function PrintControlPanel({ printerPaused, setPrinterPaused }) {
+  const [printerInfo, setPrinterInfo] = useState(null);
+  const [loadingPrinter, setLoadingPrinter] = useState(true);
+
+  useEffect(() => {
+    const fetchPrinterStatus = async () => {
+      try {
+        const res = await fetch(`${API_URL}/printer/status`);
+        const data = await res.json();
+        setPrinterInfo(data);
+      } catch (err) {
+        setPrinterInfo({ online: false, error: 'Cannot reach printer server' });
+      } finally {
+        setLoadingPrinter(false);
+      }
+    };
+
+    fetchPrinterStatus();
+    const interval = setInterval(fetchPrinterStatus, 10000); // refresh every 10s
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <>
+      <div className="content-header">
+        <h2>⚙️ Print Control</h2>
+        <p>Manage printing operations</p>
+      </div>
+      <div className="print-control-section">
+        {/* Printer Status Card */}
+        <div className="control-card">
+          <h3>🖨 Printer Status</h3>
+          {loadingPrinter ? (
+            <p className="loading-text">Checking printer...</p>
+          ) : printerInfo ? (
+            <div className="printer-status-info">
+              <div className="profile-field">
+                <label>Status</label>
+                <span className={`status-badge ${printerInfo.online ? 'approved' : 'rejected'}`}>
+                  {printerInfo.online ? '🟢 Online' : '🔴 Offline'}
+                </span>
+              </div>
+              {printerInfo.defaultPrinter && (
+                <div className="profile-field">
+                  <label>Default Printer</label>
+                  <span>{printerInfo.defaultPrinter}</span>
+                </div>
+              )}
+              {printerInfo.totalPrinters > 0 && (
+                <div className="profile-field">
+                  <label>Available Printers</label>
+                  <span>{printerInfo.totalPrinters}</span>
+                </div>
+              )}
+              {printerInfo.printers && printerInfo.printers.length > 0 && (
+                <div className="printer-list">
+                  <label>All Printers:</label>
+                  <ul>
+                    {printerInfo.printers.map((p, i) => (
+                      <li key={i}>{p.name || p}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {printerInfo.error && (
+                <div className="profile-field">
+                  <label>Error</label>
+                  <span className="error-text">{printerInfo.error}</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p>Unable to check printer status</p>
+          )}
+        </div>
+
+        {/* Block/Unblock Card */}
+        <div className="control-card">
+          <h3>Print Operations</h3>
+          <div className="operation-controls">
+            <div className="printer-state-buttons">
+              <button
+                className={`printer-btn ${!printerPaused ? 'active' : ''}`}
+                onClick={async () => {
+                  setPrinterPaused(false);
+                  window.printerBlocked = false;
+                  
+                  if (!confirm("Are you sure you want to approve and send all pending documents to the physical printer?")) {
+                    return;
+                  }
+
+                  try {
+                    const res = await fetch(`${API_URL}/print-jobs/print-pending`, {
+                      method: "POST"
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      alert(`✅ ${data.message}`);
+                    } else {
+                      alert(`❌ Error: ${data.error}`);
+                    }
+                  } catch (err) {
+                    alert("❌ Failed to connect to server for batch printing");
+                  }
+                }}
+              >
+                ✅ Unblock & Print All Pending
+              </button>
+              <button
+                className={`printer-btn ${printerPaused ? 'active' : ''}`}
+                onClick={() => {
+                  setPrinterPaused(true);
+                  window.printerBlocked = true;
+                }}
+              >
+                ❌ Block
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
