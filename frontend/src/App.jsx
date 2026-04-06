@@ -1385,6 +1385,9 @@ function AdminDashboard({ setPage }) {
 
   useEffect(() => {
     loadAdminData();
+    // Live update polling for Admin Dashboard
+    const interval = setInterval(loadAdminData, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   // Handle option change with refresh
