@@ -13,6 +13,31 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ─── Welcome Route ───────────────────────────────────────────────────────────────
+app.get('/', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <title>XeroxPro Backend</title>
+      <style>
+        body { font-family: system-ui, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f4f8; margin: 0; }
+        .container { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
+        h1 { color: #2b6cb0; margin-bottom: 0.5rem; }
+        p { color: #4a5568; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>🖨️ XeroxPro Backend API</h1>
+        <p>The server is running successfully in the cloud.</p>
+      </div>
+    </body>
+    </html>
+  `);
+});
+
 // ─── Connect to MongoDB ────────────────────────────────────────────────────────
 connectDB();
 
