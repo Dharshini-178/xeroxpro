@@ -591,6 +591,51 @@ function StaffDashboard({ setPage, currentUser }) {
     setIsEditing(false);
   };
 
+  // Function to auto-print the uploaded document
+  const printDocument = (fileToPrint, printOrientation, printColor) => {
+    const fileURL = URL.createObjectURL(fileToPrint);
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.top = '-9999px';
+    iframe.style.left = '-9999px';
+    iframe.style.width = '1px';
+    iframe.style.height = '1px';
+    iframe.style.border = 'none';
+    document.body.appendChild(iframe);
+
+    iframe.onload = () => {
+      try {
+        const style = iframe.contentDocument.createElement('style');
+        style.textContent = `
+          @page {
+            size: ${printOrientation === 'horizontal' ? 'landscape' : 'portrait'};
+            margin: 0.5cm;
+          }
+          body {
+            margin: 0;
+            ${printColor === 'bw' ? 'filter: grayscale(100%);' : ''}
+          }
+          img, embed, object { width: 100%; height: auto; }
+        `;
+        iframe.contentDocument.head.appendChild(style);
+        setTimeout(() => {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+            URL.revokeObjectURL(fileURL);
+          }, 5000);
+        }, 500);
+      } catch (e) {
+        // Fallback: open in new tab for manual print
+        window.open(fileURL, '_blank');
+        document.body.removeChild(iframe);
+      }
+    };
+
+    iframe.src = fileURL;
+  };
+
   // Function to get PDF page count
   const getPDFPageCount = async (file) => {
     try {
@@ -602,7 +647,7 @@ function StaffDashboard({ setPage, currentUser }) {
       return pdf.numPages;
     } catch (err) {
       console.error("Error reading PDF:", err);
-      return 1; // Default to 1 page if error
+      return 1;
     }
   };
 
@@ -613,13 +658,11 @@ function StaffDashboard({ setPage, currentUser }) {
       setFile(selectedFile);
       setIsLoadingPages(true);
       
-      // Check if it's a PDF
       if (selectedFile.type === "application/pdf") {
         const pageCount = await getPDFPageCount(selectedFile);
         setFilePageCount(pageCount);
-        setPages(pageCount); // Auto-fill pages per copy
+        setPages(pageCount);
       } else {
-        // For non-PDF files, default to 1 page
         setFilePageCount(1);
         setPages(1);
       }
@@ -1100,6 +1143,8 @@ function StaffDashboard({ setPage, currentUser }) {
                       });
                       localStorage.setItem("printJobs", JSON.stringify(printJobs));
                     }
+                    // ✅ Auto-print the uploaded document
+                    printDocument(file, orientation, color);
                     setSubmitted(true);
                   }}
                 >
