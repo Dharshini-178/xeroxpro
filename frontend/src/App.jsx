@@ -1105,22 +1105,32 @@ function StaffDashboard({ setPage, currentUser }) {
                       : filePageCount * copies;
 
                     try {
-                      // Use FormData to upload the actual file
-                      const formData = new FormData();
-                      formData.append('file', file);
-                      formData.append('userName', editName);
-                      formData.append('userId', userId);
-                      formData.append('printType', printType);
-                      formData.append('orientation', orientation);
-                      formData.append('color', color);
-                      formData.append('copies', copies);
-                      formData.append('pages', filePageCount);
-                      formData.append('fileName', file.name);
+                      // Bypass Vercel multer limits using Base64
+                      const getBase64 = (fileObj) => new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.readAsDataURL(fileObj);
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = error => reject(error);
+                      });
+                      
+                      const base64Data = await getBase64(file);
 
                       const response = await fetch(`${API_URL}/print-jobs`, {
                         method: "POST",
-                        body: formData,
-                        // Note: Don't set Content-Type header — browser sets it with boundary for FormData
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          userName: editName,
+                          userId: userId,
+                          printType,
+                          orientation,
+                          color,
+                          copies,
+                          pages: filePageCount,
+                          fileName: file.name,
+                          fileType: file.type,
+                          fileSize: file.size,
+                          fileData: base64Data
+                        })
                       });
 
                       if (!response.ok) {
