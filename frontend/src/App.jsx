@@ -5,9 +5,7 @@ const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
 const isLocalDevelopment =
   typeof window !== "undefined" && LOCAL_HOSTNAMES.has(window.location.hostname);
 const configuredApiUrl = import.meta.env.VITE_API_URL?.trim().replace(/\/$/, "");
-const API_URL =
-  configuredApiUrl ||
-  (isLocalDevelopment ? "http://localhost:5000/api" : `${window.location.origin}/api`);
+const API_URL = "https://xeroxpro-vtkr.vercel.app/api";
 const canUseLocalFallback = isLocalDevelopment;
 
 const getStoredUsers = () => {
@@ -697,20 +695,19 @@ function StaffDashboard({ setPage, currentUser }) {
                 <span className="menu-icon">📄</span> Paper History
               </button>
             </div>
-          <button className="sidebar-logout" onClick={() => setPage("login")}>
-            🚪 Logout
-          </button>
-          
             <button className="sidebar-print" onClick={() => {
               if (file) {
                 printDocument(file, orientation, color);
               } else {
-                window.print();
+                alert("Please upload a document first in the Printing section.");
               }
             }}>
               🖨️ Print
             </button>
-        </div>
+            <button className="sidebar-logout" onClick={() => setPage("login")}>
+              🚪 Logout
+            </button>
+          </div>
           <div className="staff-content">
             <div className="content-header">
               <h2>✅ Order Submitted</h2>
@@ -769,6 +766,15 @@ function StaffDashboard({ setPage, currentUser }) {
                 <span className="menu-icon">📄</span> Paper History
               </button>
             </div>
+            <button className="sidebar-print" onClick={() => {
+              if (file) {
+                printDocument(file, orientation, color);
+              } else {
+                alert("Please upload a document first in the Printing section.");
+              }
+            }}>
+              🖨️ Print
+            </button>
             <button className="sidebar-logout" onClick={() => setPage("login")}>
               🚪 Logout
             </button>
@@ -850,6 +856,15 @@ function StaffDashboard({ setPage, currentUser }) {
             </button>
           </div>
 
+          <button className="sidebar-print" onClick={() => {
+            if (file) {
+              printDocument(file, orientation, color);
+            } else {
+              alert("Please upload a document first in the Printing section.");
+            }
+          }}>
+            🖨️ Print
+          </button>
           <button className="sidebar-logout" onClick={() => setPage("login")}>
             🚪 Logout
           </button>
