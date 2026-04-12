@@ -224,36 +224,52 @@ app.put('/api/users/:id', async (req, res) => {
 // Submit a print job WITH file upload (Base64 JSON to bypass Vercel multer issues)
 app.post('/api/print-jobs', async (req, res) => {
   try {
-    const { userName, userId, printType, orientation, color, copies, pages, fileName, fileData, fileType, fileSize } = req.body;
+    const {
+      userName,
+      userId,
+      printType,
+      orientation,
+      color,
+      copies,
+      pages,
+      fileName,
+      fileData,
+      fileType,
+      fileSize
+    } = req.body;
 
     const jobData = {
-      user_name: userName,
+      user_name: userName || "",
       user_id: userId,
       print_type: printType,
       orientation,
       color,
       copies: Number(copies),
       pages: Number(pages),
-      file_name: fileName,
+      file_name: fileName
     };
 
-    // If Base64 string was sent, parse it into Mongoose Buffer
-    if (fileData) {
-      // The frontend sends standard DATA URL: data:image/png;base64,iVBORw0K...
-      const base64String = fileData.split(',')[1];
-      if (base64String) {
-        jobData.file_data = Buffer.from(base64String, 'base64');
-        jobData.file_mimetype = fileType;
-        jobData.file_size = fileSize;
-      }
+    if (fileData && typeof fileData === "string" && fileData.includes(",")) {
+      const base64String = fileData.split(",")[1];
+
+      jobData.file_data = Buffer.from(base64String, "base64");
+      jobData.file_mimetype = fileType;
+      jobData.file_size = fileSize;
     }
 
     const job = await PrintJob.create(jobData);
 
-    res.json({ message: 'Print job submitted successfully', jobId: job._id });
+    res.json({
+      message: "Print job submitted successfully",
+      jobId: job._id
+    });
+
   } catch (error) {
-    console.error('Error creating print job:', error);
-    res.status(500).json({ error: 'Failed to create print job' });
+    console.error("Error creating print job:", error);
+    res.status(500).json({
+      error: "Failed to create print job",
+      details: error.message
+    });
   }
 });
 

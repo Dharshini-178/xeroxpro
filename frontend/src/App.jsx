@@ -6,6 +6,8 @@ const isLocalDevelopment =
   typeof window !== "undefined" && LOCAL_HOSTNAMES.has(window.location.hostname);
 const configuredApiUrl = import.meta.env.VITE_API_URL?.trim().replace(/\/$/, "");
 const API_URL = "https://xeroxpro-vtkr.vercel.app/api";
+//const API_URL = "http://localhost:5000/api";
+
 const canUseLocalFallback = isLocalDevelopment;
 
 const getStoredUsers = () => {
@@ -1134,7 +1136,7 @@ function StaffDashboard({ setPage, currentUser }) {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                          userName: editName,
+                          userName: editName || "123543",
                           userId: userId,
                           printType,
                           orientation,
